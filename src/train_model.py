@@ -3,6 +3,7 @@ import pandas as pd
 import numpy as np
 import joblib
 import optuna
+import sys
 
 from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import RandomForestClassifier
@@ -21,10 +22,7 @@ from xgboost import XGBClassifier
 # =========================
 print("\nRunning handle_dataset.py...\n")
 
-subprocess.run(
-    ["python", "handle_dataset.py"],
-    check=True
-)
+subprocess.run([sys.executable, "handle_dataset.py"], check=True)
 
 print("\nDataset preparation completed!\n")
 
