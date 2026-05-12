@@ -1,15 +1,8 @@
 import pandas as pd
 
-df = pd.read_csv("Friday-WorkingHours-Afternoon-DDos.pcap_ISCX.csv")
+df = pd.read_csv("Combined_Dataset/CICIDS2017_GROUPED.csv")
 
-print("Shape:")
-print(df.shape)
+features = df.drop("Label", axis=1).columns
 
-print("\nColumns:")
-print(df.columns.tolist())
-
-print("\nLabel Counts:")
-print(df[" Label"].value_counts())
-
-print("\nFirst 5 Rows:")
-print(df.head())
+print("Total features:", len(features))
+print(features.tolist())

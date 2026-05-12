@@ -1,86 +1,146 @@
+import subprocess
 import pandas as pd
 import numpy as np
 import joblib
 import optuna
 
-from sklearn.model_selection import train_test_split, cross_val_score
+from sklearn.model_selection import cross_val_score
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import classification_report, confusion_matrix, accuracy_score
+from sklearn.metrics import (
+    classification_report,
+    confusion_matrix,
+    accuracy_score
+)
 from sklearn.preprocessing import LabelEncoder
 
 from xgboost import XGBClassifier
 
 
 # =========================
-# LOAD DATA
+# RUN DATASET HANDLER
 # =========================
-df = pd.read_csv("../Dataset/Combined_Dataset/CICIDS2017_GROUPED.csv")
+print("\nRunning handle_dataset.py...\n")
 
-print("Dataset Shape:", df.shape)
-print("\nLabel Distribution:")
-print(df["Label"].value_counts())
+subprocess.run(
+    ["python", "handle_dataset.py"],
+    check=True
+)
 
-
-# =========================
-# CLEAN (important for XGBoost/Sklearn)
-# =========================
-df.replace([np.inf, -np.inf], np.nan, inplace=True)
-df.dropna(inplace=True)
+print("\nDataset preparation completed!\n")
 
 
 # =========================
-# SPLIT FEATURES / LABEL
+# LOAD TRAIN / TEST DATA
 # =========================
-X = df.drop("Label", axis=1)
-y_raw = df["Label"]
+train_df = pd.read_csv(
+    "../Dataset/Combined_Dataset/CICIDS2017_TRAIN.csv"
+)
+
+test_df = pd.read_csv(
+    "../Dataset/Combined_Dataset/CICIDS2017_TEST.csv"
+)
+
+print("Train Dataset Shape:", train_df.shape)
+print("Test Dataset Shape:", test_df.shape)
+
+print("\nTrain Label Distribution:")
+print(train_df["Label"].value_counts())
+
+print("\nTest Label Distribution:")
+print(test_df["Label"].value_counts())
+
+
+# =========================
+# CLEAN DATA
+# =========================
+train_df.replace([np.inf, -np.inf], np.nan, inplace=True)
+test_df.replace([np.inf, -np.inf], np.nan, inplace=True)
+
+train_df.dropna(inplace=True)
+test_df.dropna(inplace=True)
+
+
+# =========================
+# SPLIT FEATURES / LABELS
+# =========================
+X_train = train_df.drop("Label", axis=1)
+y_train_raw = train_df["Label"]
+
+X_test = test_df.drop("Label", axis=1)
+y_test_raw = test_df["Label"]
 
 
 # =========================
 # LABEL ENCODING
 # =========================
 le = LabelEncoder()
-y = le.fit_transform(y_raw)
+
+y_train = le.fit_transform(y_train_raw)
+y_test = le.transform(y_test_raw)
 
 print("\nLabel Mapping:")
+
 for i, cls in enumerate(le.classes_):
     print(i, "=", cls)
 
 
 # =========================
-# TRAIN TEST SPLIT (FINAL EVAL SET)
+# FEATURE COLUMNS
 # =========================
-X_train, X_test, y_train, y_test = train_test_split(
-    X,
-    y,
-    test_size=0.2,
-    random_state=42,
-    stratify=y
+feature_columns = X_train.columns.tolist()
+
+print("\nTotal Features:", len(feature_columns))
+
+
+# =========================
+# SMALL SAMPLE FOR OPTUNA
+# =========================
+sample_df = train_df.sample(
+    n=min(200000, len(train_df)),
+    random_state=42
 )
 
-print("\nTrain Shape:", X_train.shape)
-print("Test Shape:", X_test.shape)
-
-
-# =========================
-# SMALL SAMPLE FOR OPTUNA (FAST TUNING)
-# =========================
-sample_df = df.sample(n=200000, random_state=42)
-
 X_sample = sample_df.drop("Label", axis=1)
+
 y_sample = le.transform(sample_df["Label"])
 
 
 # =========================
-# OPTUNA OBJECTIVE (XGBOOST TUNING)
+# OPTUNA OBJECTIVE
 # =========================
 def objective(trial):
 
     params = {
-        "n_estimators": trial.suggest_int("n_estimators", 100, 300),
-        "max_depth": trial.suggest_int("max_depth", 4, 10),
-        "learning_rate": trial.suggest_float("learning_rate", 0.01, 0.2),
-        "subsample": trial.suggest_float("subsample", 0.6, 1.0),
-        "colsample_bytree": trial.suggest_float("colsample_bytree", 0.6, 1.0),
+        "n_estimators": trial.suggest_int(
+            "n_estimators",
+            100,
+            300
+        ),
+
+        "max_depth": trial.suggest_int(
+            "max_depth",
+            4,
+            10
+        ),
+
+        "learning_rate": trial.suggest_float(
+            "learning_rate",
+            0.01,
+            0.2
+        ),
+
+        "subsample": trial.suggest_float(
+            "subsample",
+            0.6,
+            1.0
+        ),
+
+        "colsample_bytree": trial.suggest_float(
+            "colsample_bytree",
+            0.6,
+            1.0
+        ),
+
         "random_state": 42,
         "n_jobs": -1,
         "eval_metric": "mlogloss"
@@ -102,20 +162,24 @@ def objective(trial):
 # =========================
 # RUN OPTUNA
 # =========================
-print("\nRunning Optuna hyperparameter tuning...")
+print("\nRunning Optuna Hyperparameter Tuning...")
 
-study = optuna.create_study(direction="maximize")
-study.optimize(objective, n_trials=10)
+study = optuna.create_study(
+    direction="maximize"
+)
 
-print("\nBest Parameters Found:")
+study.optimize(
+    objective,
+    n_trials=10
+)
+
+print("\nBest Parameters:")
 print(study.best_params)
 
 
 # =========================
-# FINAL MODELS
+# RANDOM FOREST
 # =========================
-
-# Random Forest (baseline)
 rf = RandomForestClassifier(
     n_estimators=100,
     random_state=42,
@@ -123,10 +187,13 @@ rf = RandomForestClassifier(
 )
 
 print("\nTraining Random Forest...")
+
 rf.fit(X_train, y_train)
 
 
-# Tuned XGBoost
+# =========================
+# TUNED XGBOOST
+# =========================
 best_params = study.best_params
 
 xgb = XGBClassifier(
@@ -137,6 +204,7 @@ xgb = XGBClassifier(
 )
 
 print("\nTraining Tuned XGBoost...")
+
 xgb.fit(X_train, y_train)
 
 
@@ -144,10 +212,13 @@ xgb.fit(X_train, y_train)
 # EVALUATION FUNCTION
 # =========================
 def evaluate(model, X_test, y_test, name):
+
     y_pred = model.predict(X_test)
 
     print(f"\n===== {name} =====")
-    print("Accuracy:", accuracy_score(y_test, y_pred))
+
+    print("\nAccuracy:")
+    print(accuracy_score(y_test, y_pred))
 
     print("\nConfusion Matrix:")
     print(confusion_matrix(y_test, y_pred))
@@ -156,15 +227,46 @@ def evaluate(model, X_test, y_test, name):
     print(classification_report(y_test, y_pred))
 
 
-evaluate(rf, X_test, y_test, "Random Forest")
-evaluate(xgb, X_test, y_test, "Tuned XGBoost")
+# =========================
+# EVALUATE MODELS
+# =========================
+evaluate(
+    rf,
+    X_test,
+    y_test,
+    "Random Forest"
+)
+
+evaluate(
+    xgb,
+    X_test,
+    y_test,
+    "Tuned XGBoost"
+)
 
 
 # =========================
-# SAVE MODELS (FOR FASTAPI)
+# SAVE MODELS
 # =========================
-joblib.dump(rf, "../Model/rf_model.pkl")
-joblib.dump(xgb, "../Model/xgb_model.pkl")
-joblib.dump(le, "../Model/label_encoder.pkl")
+joblib.dump(
+    rf,
+    "../Model/rf_model.pkl"
+)
+
+joblib.dump(
+    xgb,
+    "../Model/xgb_model.pkl"
+)
+
+joblib.dump(
+    le,
+    "../Model/label_encoder.pkl"
+)
+
+joblib.dump(
+    feature_columns,
+    "../Model/feature_columns.pkl"
+)
 
 print("\nModels saved successfully!")
+print("Feature Count:", len(feature_columns))
