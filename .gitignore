@@ -9,3 +9,5 @@ Dataset/Tuesday-WorkingHours.pcap_ISCX.csv
 Dataset/Wednesday-workingHours.pcap_ISCX.csv
 venv
 Dataset/Combined_Dataset/CICIDS2017_GROUPED.zip
+Dataset/Combined_Dataset/CICIDS2017_TEST.csv
+Dataset/Combined_Dataset/CICIDS2017_TRAIN.csv
