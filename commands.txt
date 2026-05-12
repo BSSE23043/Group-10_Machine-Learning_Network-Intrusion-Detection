@@ -1,0 +1,11 @@
+Activate virtual environment:
+venv\Scripts\Activate.ps1
+
+Upgrade Pip:
+python -m pip install --upgrade pip setuptools wheel
+
+Install Pandas Safely:
+pip install pandas --only-binary=:all:
+
+Install dependencies:
+pip install -r requirements.txt
