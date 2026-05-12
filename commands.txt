@@ -15,4 +15,5 @@ pip install pandas --only-binary=:all:
 Install dependencies:
 pip install -r requirements.txt
 
+Launch app on localhost:
 python -m uvicorn main:app --reload
