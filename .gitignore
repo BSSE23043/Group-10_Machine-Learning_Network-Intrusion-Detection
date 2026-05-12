@@ -7,8 +7,5 @@ Dataset/Thursday-WorkingHours-Afternoon-Infilteration.pcap_ISCX.csv
 Dataset/Thursday-WorkingHours-Morning-WebAttacks.pcap_ISCX.csv
 Dataset/Tuesday-WorkingHours.pcap_ISCX.csv
 Dataset/Wednesday-workingHours.pcap_ISCX.csv
-Model/xgb_model.pkl
-Model/label_encoder.pkl
-Model/rf_model.pkl
 venv
 Dataset/Combined_Dataset/CICIDS2017_GROUPED.zip
