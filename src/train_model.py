@@ -225,24 +225,6 @@ def evaluate(model, X_test, y_test, name):
 
 
 # =========================
-# EVALUATE MODELS
-# =========================
-evaluate(
-    rf,
-    X_test,
-    y_test,
-    "Random Forest"
-)
-
-evaluate(
-    xgb,
-    X_test,
-    y_test,
-    "Tuned XGBoost"
-)
-
-
-# =========================
 # SAVE MODELS
 # =========================
 joblib.dump(

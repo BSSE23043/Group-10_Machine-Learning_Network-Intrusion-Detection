@@ -2,14 +2,22 @@ from fastapi import FastAPI, HTTPException
 import joblib
 import numpy as np
 from pydantic import BaseModel
+from fastapi.responses import FileResponse
+import os
+import pandas as pd
 
 app = FastAPI(title="NIDS Prediction API")
 
 # Load models
-rf_model = joblib.load("../Model/rf_model.pkl")
-xgb_model = joblib.load("../Model/xgb_model.pkl")
-label_encoder = joblib.load("../Model/label_encoder.pkl")
-feature_columns = joblib.load("../Model/feature_columns.pkl")
+from pathlib import Path
+
+BASE_DIR = Path(__file__).resolve().parent
+MODEL_DIR = BASE_DIR.parent / "Model"
+
+rf_model = joblib.load(MODEL_DIR / "rf_model.pkl")
+xgb_model = joblib.load(MODEL_DIR / "xgb_model.pkl")
+label_encoder = joblib.load(MODEL_DIR / "label_encoder.pkl")
+feature_columns = joblib.load(MODEL_DIR / "feature_columns.pkl")
 # feature_columns = 78 #For testing
 
 
@@ -27,11 +35,8 @@ def validate_input(features):
 
 
 @app.get("/")
-def home():
-    return {
-        "message": "NIDS API running",
-        "expected_features": len(feature_columns)
-    }
+def serve_frontend():
+    return FileResponse(os.path.join("static", "index.html"))
 
 
 @app.post("/predict/rf")
@@ -39,7 +44,7 @@ def predict_rf(data: InputData):
 
     validate_input(data.features)
 
-    x = np.array(data.features).reshape(1, -1)
+    x = pd.DataFrame([data.features], columns=feature_columns)
     pred = rf_model.predict(x)
 
     return {

@@ -39,10 +39,6 @@ y = df["Label"]
 print("\nFeature Shape:", X.shape)
 print("Label Shape:", y.shape)
 
-
-
-
-
 #Random Forest Starting Here#
 
 from sklearn.model_selection import train_test_split
