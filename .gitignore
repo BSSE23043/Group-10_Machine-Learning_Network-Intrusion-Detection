@@ -1,4 +1,8 @@
-Supervised-Model/venv
-Supervised-Model/Dataset/Combined_Dataset/CICIDS2017_GROUPED.zip
-*.csv
-Supervised-Model/Model/
+# Ignore all virtual environments named 'venv' anywhere in the project
+**/venv/
+venv/
+
+# Also ignore other common environment names
+.venv/
+env/
+ENV/
