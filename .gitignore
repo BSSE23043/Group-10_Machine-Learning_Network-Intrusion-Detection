@@ -6,3 +6,6 @@ venv/
 .venv/
 env/
 ENV/
+
+*.csv
+*.pkl
